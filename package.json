@@ -1,6 +1,6 @@
 {
   "name": "react-inline-input",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A React component for inline editable inputs.",
   "main": "dist/index.js",
   "unpkg": "dist/index.js",
