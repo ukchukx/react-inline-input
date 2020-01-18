@@ -9,7 +9,9 @@ export default class InlineInput extends Component {
     ]),
     type: PropTypes.string,
     placeholder: PropTypes.string,
-    option: PropTypes.array,
+    options: PropTypes.array,
+    cols: PropTypes.number,
+    rows: PropTypes.number,
     labelClasses: PropTypes.string,
     inputClasses: PropTypes.string,
     onInput: PropTypes.func.isRequired
@@ -21,7 +23,9 @@ export default class InlineInput extends Component {
     placeholder: 'text',
     options: [],
     labelClasses: '',
-    inputClasses: ''
+    inputClasses: '',
+    cols: 20,
+    rows: 2
   };
 
   state = {
@@ -29,15 +33,17 @@ export default class InlineInput extends Component {
     inputEl: React.createRef(),
     selectedIndex: this.props.options.findIndex(({ value }) => value === this.props.value),
     isText: this.props.type === 'text',
-    isNumber: this.props.type === 'number'
+    isNumber: this.props.type === 'number',
+    isTextArea: this.props.type === 'textarea'
   };
 
-  static getDerivedStateFromProps(nextProps, prevState) {
+  static getDerivedStateFromProps(nextProps, _) {
     const { type } = nextProps;
 
     return {
       isText: type === 'text',
-      isNumber: type === 'number'
+      isNumber: type === 'number',
+      isTextArea: type === 'textarea'
     };
   }
 
@@ -55,7 +61,6 @@ export default class InlineInput extends Component {
 
   handleBlur = () => {
     this.toggle();
-    this.emitValue();
   };
 
   handleInput = (e) => {
@@ -67,19 +72,29 @@ export default class InlineInput extends Component {
   };
 
   computeLabel = () => {
-    const { state: { isNumber, isText }, props: { value, placeholder } } = this;
+    const { state: { isNumber, isText, isTextArea }, props: { value, placeholder } } = this;
 
     if (isNumber) return value === '' ? placeholder : value;
-    if (isText) return value ? value : placeholder;
+    if (isText || isTextArea) return value ? value : placeholder;
   };
 
   render() {
-    const { state: { editing, isText, isNumber } } = this;
+    const { 
+      state: { editing, isText, isNumber, isTextArea },
+      _renderInput,
+      _renderLabel,
+      _renderTextArea
+    } = this;
+    const shouldShowNumberOrText = editing && (isText || isNumber);
+    const shouldShowTextArea = editing && isTextArea;
 
       return (
-        editing && (isText || isNumber)
-          ? this._renderInput()
-          : this._renderLabel()
+        shouldShowNumberOrText
+          ? _renderInput()
+          : (shouldShowTextArea 
+              ? _renderTextArea() 
+              : _renderLabel()
+            )
       );
   }
 
@@ -95,10 +110,10 @@ export default class InlineInput extends Component {
 
   _renderInput = () => {
     const { 
-      props: { inputClasses, placeholder, type, value }, 
       handleBlur, 
       handleEnter, 
       handleInput, 
+      props: { inputClasses, placeholder, type, value }, 
       state: { inputEl } 
     } = this;
     
@@ -112,6 +127,29 @@ export default class InlineInput extends Component {
         onBlur={handleBlur}
         onKeyUp={handleEnter}
         onInput={handleInput} />
+    );
+  };
+
+  _renderTextArea = () => {
+    const { 
+      handleBlur, 
+      handleEnter, 
+      handleInput, 
+      props: { cols, inputClasses, placeholder, rows, type, value }, 
+      state: { inputEl } 
+    } = this;
+
+    return (
+      <textarea 
+        ref={inputEl}
+        value={value} 
+        className={inputClasses} 
+        placeholder={placeholder}
+        onBlur={handleBlur}
+        onInput={handleInput}
+        rows={rows}
+        cols={cols}>
+      </textarea>
     );
   };
 }
