@@ -15,7 +15,8 @@ export default class InlineInput extends Component {
     labelClasses: PropTypes.string,
     inputClasses: PropTypes.string,
     onInput: PropTypes.func.isRequired,
-    renderSelectLabel: PropTypes.func
+    renderSelectLabel: PropTypes.func,
+    onBlur: PropTypes.func
   };
 
   static defaultProps = {
@@ -27,7 +28,8 @@ export default class InlineInput extends Component {
     inputClasses: '',
     cols: 20,
     rows: 2,
-    renderSelectLabel: null
+    renderSelectLabel: null,
+    onBlur: null
   };
 
   state = {
@@ -60,7 +62,10 @@ export default class InlineInput extends Component {
   };
 
   handleBlur = () => {
+    const { onBlur } = this.props;
+
     this.toggle();
+    if (onBlur) onBlur();
   };
 
   handleInput = (e) => {
