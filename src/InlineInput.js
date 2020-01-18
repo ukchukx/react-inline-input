@@ -14,7 +14,8 @@ export default class InlineInput extends Component {
     rows: PropTypes.number,
     labelClasses: PropTypes.string,
     inputClasses: PropTypes.string,
-    onInput: PropTypes.func.isRequired
+    onInput: PropTypes.func.isRequired,
+    renderSelectLabel: PropTypes.func
   };
 
   static defaultProps = {
@@ -25,16 +26,14 @@ export default class InlineInput extends Component {
     labelClasses: '',
     inputClasses: '',
     cols: 20,
-    rows: 2
+    rows: 2,
+    renderSelectLabel: null
   };
 
   state = {
     editing: false,
     inputEl: React.createRef(),
-    selectedIndex: this.props.options.findIndex(({ value }) => value === this.props.value),
-    isText: this.props.type === 'text',
-    isNumber: this.props.type === 'number',
-    isTextArea: this.props.type === 'textarea'
+    selectedIndex: this.props.options.findIndex(({ value }) => value === this.props.value)
   };
 
   static getDerivedStateFromProps(nextProps, _) {
@@ -43,7 +42,8 @@ export default class InlineInput extends Component {
     return {
       isText: type === 'text',
       isNumber: type === 'number',
-      isTextArea: type === 'textarea'
+      isTextArea: type === 'textarea',
+      isSelect: type === 'select'
     };
   }
 
@@ -67,43 +67,65 @@ export default class InlineInput extends Component {
     this.emitValue(this.state.isNumber ? +e.target.value : e.target.value);
   };
 
+  handleChange = (e) => {
+    const selectedIndex = this.props.placeholder ? e.target.selectedIndex - 1 : e.target.selectedIndex;
+
+    this.setState({ selectedIndex }, () => {
+      this.emitValue(this.props.options[selectedIndex].value);
+    });
+  };
+
   emitValue = (value) => {
     this.props.onInput(value);
   };
 
   computeLabel = () => {
-    const { state: { isNumber, isText, isTextArea }, props: { value, placeholder } } = this;
+    const { state: { isNumber, isText, isTextArea, selectedIndex }, props: { value, placeholder, options } } = this;
 
     if (isNumber) return value === '' ? placeholder : value;
     if (isText || isTextArea) return value ? value : placeholder;
+    // Select
+    return selectedIndex === -1 ? placeholder : options[selectedIndex].label;
   };
 
   render() {
     const { 
-      state: { editing, isText, isNumber, isTextArea },
+      state: { editing, isNumber, isSelect, isText, isTextArea },
       _renderInput,
       _renderLabel,
+      _renderSelect,
       _renderTextArea
     } = this;
     const shouldShowNumberOrText = editing && (isText || isNumber);
     const shouldShowTextArea = editing && isTextArea;
+    const shouldShowSelect = editing && isSelect;
 
       return (
         shouldShowNumberOrText
           ? _renderInput()
           : (shouldShowTextArea 
               ? _renderTextArea() 
-              : _renderLabel()
+              : (shouldShowSelect 
+                  ? _renderSelect()
+                  : _renderLabel()
+                )
             )
       );
   }
 
   _renderLabel = () => {
-    const { props: { labelClasses }, toggle, computeLabel } = this;
+    const { 
+      props: { labelClasses, renderSelectLabel }, 
+      toggle, 
+      computeLabel,
+      _renderSelectLabel
+    } = this;
+    const selectLabelRenderFn = renderSelectLabel ? renderSelectLabel : _renderSelectLabel;
     
     return (
       <span className={labelClasses} onClick={toggle}>
         {computeLabel()}
+        {selectLabelRenderFn()}
       </span>
     );
   };
@@ -133,9 +155,8 @@ export default class InlineInput extends Component {
   _renderTextArea = () => {
     const { 
       handleBlur, 
-      handleEnter, 
       handleInput, 
-      props: { cols, inputClasses, placeholder, rows, type, value }, 
+      props: { cols, inputClasses, placeholder, rows, value }, 
       state: { inputEl } 
     } = this;
 
@@ -152,4 +173,35 @@ export default class InlineInput extends Component {
       </textarea>
     );
   };
+
+  _renderSelect = () => {
+    const { 
+      handleBlur, 
+      handleChange,
+      props: { inputClasses, options, placeholder, value }, 
+      state: { inputEl } 
+    } = this;
+
+    return (
+      <select 
+        ref={inputEl}
+        class={inputClasses}
+        defaultValue={value}
+        onChange={handleChange}
+        onBlur={handleBlur}>
+        {placeholder
+          ? <option disabled value>{placeholder}</option>
+          : ''}
+        {options.map(({ label, value }, i) => (
+          <option 
+            key={i}
+            value={value}>
+            {label}
+          </option>
+        ))}
+      </select>
+    );
+  };
+
+  _renderSelectLabel = () => this.state.isSelect ? (<span>&#9660;</span>) : '';
 }
